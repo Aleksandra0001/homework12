@@ -16,6 +16,19 @@ class AddressBook(UserDict):
     def search_by_records(self, value):
         return value in self.data.values()
 
+    def delete_record(self, value):
+        value = value[0].upper() + value[1:].lower()
+        self.data.__delitem__(value)
+        return print(f"Record {value} was deleted")
+
+    def update_record(self, old_value):
+        for value in self.data.values():
+            value_list = str(value).split(",")
+            if old_value in value_list:
+                print("eeee")
+        # else:
+        #     print("Record not found.")
+
     def iterator(self, n):
         if len(self.data) < n:
             raise Exception(
@@ -27,6 +40,17 @@ class AddressBook(UserDict):
                     [f'Contact <{el[0]}> has following contacts {el[1]}' for el in data_list[:n]])
                 yield result
                 data_list = data_list[n:]
+
+    def save(self):
+        with open(FILE_NAME, "wb") as fh:
+            pickle.dump(self.data, fh)
+
+    def load(self):
+        try:
+            with open(FILE_NAME, "rb") as fh:
+                self.data = pickle.load(fh)
+        except FileNotFoundError:
+            pass
 
 
 class Record:
@@ -58,7 +82,7 @@ class Record:
         return (self.birthday.value.replace(year=now.year + 1) - now).days
 
     def __repr__(self):
-        result = f"Name:{self.name}, Phone-number:{self.phone_number}, Birthday:{self.birthday}"
+        result = f"{self.name}, {self.phone_number}, {self.birthday}"
         return result
 
 
@@ -92,7 +116,7 @@ class Field:
     def phone(self, value):
         value = value.strip()
         if not value:
-            return None
+            self.__phone = None
         else:
             if bool(re.match(PHONE_REGEX, value)):
                 if len(value) == 12:
@@ -134,22 +158,11 @@ class Birthday(Field):
         return str(self.birthday)
 
 
-def write_to_file(address_book):
-    with open(FILE_NAME, "wb") as fh:
-        pickle.dump(address_book, fh)
-
-
-def read_file(file_name):
-    try:
-        with open(file_name, "rb") as fh:
-            return pickle.load(fh)
-    except FileNotFoundError:
-        return AddressBook()
-
-
 def main():
-    commands = ["add", "show", "delete", "find", "edit", "exit", "bye", "goodbye"]
-    sasha_book = read_file(FILE_NAME)
+    commands = ["add", "show", "delete", "find", "edit", "update", "change", "exit", "bye", "goodbye"]
+    sasha_book = AddressBook()
+    sasha_book.load()
+    print("Hi!")
     while True:
         command = input("Write your command:").casefold()
         if command in commands:
@@ -159,15 +172,20 @@ def main():
                 birthday = input("Enter birthday yyyy/mm/dd:")
                 record = Record(Name(name), Phone(phone_number), Birthday(birthday))
                 sasha_book.add_record(record)
+                sasha_book.save()
             if command == "delete":
                 name = input("Enter fullname:")
-                phone_number = input("Enter phone-number:")
-                birthday = input("Enter birthday:")
+                sasha_book.delete_record(name)
+                sasha_book.save()
+            if command == "edit" or command == "update" or command == "change":
+                value = input("Enter name/phone/birthday for update:")
+                sasha_book.update_record(value)
+                sasha_book.save()
             if command == "show":
                 print(sasha_book)
             if command == "exit" or command == "bye" or command == "goodbye":
                 print("Goodbye!")
-                write_to_file(sasha_book)
+                sasha_book.save()
                 break
             # else:
             #     print("Invalid command")
