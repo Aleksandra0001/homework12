@@ -1,5 +1,4 @@
-import datetime
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from collections import UserDict
 import re
 import pickle
@@ -74,15 +73,22 @@ class Record:
                 break
 
     def days_to_birthday(self):
-        if not self.birthday:
-            return
-        now = datetime.date.today()
-        if (self.birthday.value.replace(year=now.year) - now).days > 0:
-            return (self.birthday.value.replace(year=now.year) - now).days
-        return (self.birthday.value.replace(year=now.year + 1) - now).days
+        if self.birthday is not None:
+            real_time = datetime.now()
+            datetime_birthday = datetime.strptime(str(self.birthday), '%d.%m.%Y')
+            this_year_birthday = datetime_birthday.replace(year=real_time.year)
+            next_year_birthday = datetime_birthday.replace(
+                year=real_time.year + 1)
+            this_year_days_count = (this_year_birthday - real_time).days
+            next_year_days_count = (next_year_birthday - real_time).days
+            result = this_year_days_count if real_time.date(
+            ) < this_year_birthday.date() else next_year_days_count
+        else:
+            result = f'There is no birthday date for contact <{self.name}>'
+        return result
 
     def __repr__(self):
-        result = f"{self.name}, {self.phone_number}, {self.birthday}"
+        result = f"{self.name}, {self.phone_number}, {self.birthday}, {self.days_to_birthday()} days to birthday"
         return result
 
 
@@ -128,7 +134,17 @@ class Field:
 
     @birthday.setter
     def birthday(self, value):
-        self.__birthday = value
+        real_time = datetime.now()
+        datetime_birthday = datetime.strptime(value, '%d.%m.%Y')
+        checking_age = real_time.year - datetime_birthday.year
+        if checking_age >= 100:
+            raise Exception(
+                f'Hey, grandpa! You are too old) Check if you have entered correct birthday date.')
+        elif real_time.year <= datetime_birthday.year:
+            raise Exception(
+                f'Hey, baby! You are too young) Check if you have entered correct birthday date.')
+        else:
+            self.__birthday = value
 
 
 class Name(Field):
@@ -169,7 +185,7 @@ def main():
             if command == "add":
                 name = input("Enter fullname:")
                 phone_number = input("Enter phone-number:")
-                birthday = input("Enter birthday yyyy/mm/dd:")
+                birthday = input("Enter birthday dd.mm.yyyy:")
                 record = Record(Name(name), Phone(phone_number), Birthday(birthday))
                 sasha_book.add_record(record)
                 sasha_book.save()
@@ -187,8 +203,8 @@ def main():
                 print("Goodbye!")
                 sasha_book.save()
                 break
-            # else:
-            #     print("Invalid command")
+        else:
+            print("Invalid command")
 
 
 if __name__ == '__main__':
