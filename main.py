@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from helpper import check_age
 from collections import UserDict
 import re
 import pickle
@@ -76,23 +77,8 @@ class Record:
                 self.phones[index] = new_number
                 break
 
-    def days_to_birthday(self):
-        if self.birthday is not None:
-            real_time = datetime.now()
-            datetime_birthday = datetime.strptime(str(self.birthday), '%d.%m.%Y')
-            this_year_birthday = datetime_birthday.replace(year=real_time.year)
-            next_year_birthday = datetime_birthday.replace(
-                year=real_time.year + 1)
-            this_year_days_count = (this_year_birthday - real_time).days
-            next_year_days_count = (next_year_birthday - real_time).days
-            result = this_year_days_count if real_time.date(
-            ) < this_year_birthday.date() else next_year_days_count
-        else:
-            result = f'There is no birthday date for contact <{self.name}>'
-        return result
-
     def __repr__(self):
-        result = f"{self.name} {self.phone_number} {self.birthday} {self.days_to_birthday()} days to birthday"
+        result = f"{self.name} {self.phone_number} {self.birthday}"
         return result
 
 
@@ -101,6 +87,7 @@ class Field:
         self.__name = None
         self.__phone = None
         self.__birthday = None
+        self.__days_to_birthday = None
 
     @property
     def name(self):
@@ -138,17 +125,23 @@ class Field:
 
     @birthday.setter
     def birthday(self, value):
-        real_time = datetime.now()
-        datetime_birthday = datetime.strptime(value, '%d.%m.%Y')
-        checking_age = real_time.year - datetime_birthday.year
-        if checking_age >= 100:
-            raise Exception(
-                f'Hey, grandpa! You are too old) Check if you have entered correct birthday date.')
-        elif real_time.year <= datetime_birthday.year:
-            raise Exception(
-                f'Hey, baby! You are too young) Check if you have entered correct birthday date.')
-        else:
-            self.__birthday = value
+        value = value.strip()
+        if value not in [None, ""] and check_age(value):
+            self.count_days_to_birthday(value)
+            self.__birthday = f"{value} {self.__days_to_birthday} days to birthday"
+
+    def count_days_to_birthday(self, value):
+        try:
+            current_day = datetime.now()
+            birthday = datetime.strptime(value, '%d.%m.%Y')
+            current_birthday = birthday.replace(year=current_day.year)
+            next_birthday = birthday.replace(year=current_day.year+1)
+            current_count = (current_birthday - current_day).days
+            next_count = (next_birthday - current_day).days
+            days_to_birthday = current_count if current_day.date() < current_birthday.date() else next_count
+            self.__days_to_birthday = days_to_birthday
+        except ValueError:
+            raise Exception("Birthday not valid")
 
 
 class Name(Field):
