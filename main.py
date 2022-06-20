@@ -14,13 +14,11 @@ class AddressBook(UserDict):
         self.data[name] = record
 
     def find_record(self, search_value):
-        list_of_values = []
-        for value in self.data.values():
-            for v in str(value).lower().split(" "):
-                list_of_values.append(v)
-            for word in list_of_values:
+        for record in self.data.values():
+            list_of_records = str(record).lower().split(" ")
+            for word in list_of_records:
                 if word == search_value.lower():
-                    return print(f"By {search_value} was found: {value} ")
+                    return print(f"By {search_value} was found: {record} ")
         else:
             return print("Not found")
 
@@ -30,8 +28,34 @@ class AddressBook(UserDict):
         return print(f"Record {value} was deleted")
 
     def update_record(self, old_value, new_value):
-        old_record = self.find_record(old_value)
-        print(old_record)
+        # old_value = old_value[0].upper() + old_value[1:].lower()
+        # new_value = new_value[0].upper() + new_value[1:].lower()
+        record_list = (str(value).split(" ") for value in self.data.values())
+        for record in record_list:
+            if old_value in record:
+                index = record.index(old_value)
+                record[index] = new_value
+                name = record[0][0].upper() + record[0][1:].lower()
+                self.data[name] = ' '.join(record)
+                self.delete_record(old_value)
+
+                return print(f"{old_value} was replaced with {new_value}")
+
+            return print(f"{old_value} was not found")
+
+        # record_list = (str(value).split(" ") for value in self.data.values())
+        # for record in self.data.values():
+        #     list_of_records = str(record).lower().split(" ")
+        #     for word in list_of_records:
+        #         if word == old_value.lower():
+        #             index = list_of_records.index(word)
+        #             list_of_records[index] = new_value
+        #             new_record = " ".join(list_of_records)
+        #             name = list_of_records[0]
+        #             print(new_record)
+        #             print(name)
+                    # for name in self.data.keys():
+                        # self.data[name] = new_record
 
     def iterator(self, n):
         if len(self.data) < n:
@@ -135,7 +159,7 @@ class Field:
             current_day = datetime.now()
             birthday = datetime.strptime(value, '%d.%m.%Y')
             current_birthday = birthday.replace(year=current_day.year)
-            next_birthday = birthday.replace(year=current_day.year+1)
+            next_birthday = birthday.replace(year=current_day.year + 1)
             current_count = (current_birthday - current_day).days
             next_count = (next_birthday - current_day).days
             days_to_birthday = current_count if current_day.date() < current_birthday.date() else next_count
@@ -191,14 +215,13 @@ def main():
                 sasha_book.delete_record(name)
                 sasha_book.save()
             if command == "edit" or command == "update" or command == "change":
-                value = input("Enter name/phone/birthday for update:")
-                sasha_book.update_record(value)
-                sasha_book.save()
-            if command == "find" or command == "search":
                 old_value = input("Enter name/phone/birthday:")
                 new_value = input("Enter new name/phone/birthday:")
-                sasha_book.find_record(old_value, new_value)
+                sasha_book.update_record(old_value, new_value)
                 sasha_book.save()
+            if command == "find" or command == "search":
+                value = input("Enter name/phone/birthday for update:")
+                sasha_book.find_record(value)
             if command == "show":
                 print(sasha_book)
             if command == "exit" or command == "bye" or command == "goodbye":
