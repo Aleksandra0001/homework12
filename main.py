@@ -22,40 +22,34 @@ class AddressBook(UserDict):
         else:
             return print("Not found")
 
-    def delete_record(self, value):
-        value = value[0].upper() + value[1:].lower()
-        self.data.__delitem__(value)
-        return print(f"Record {value} was deleted")
+    def delete_record(self, key):
+        key = key[0].upper() + key[1:].lower()
+        if key in self.data.keys():
+            self.data.__delitem__(key)
+            return print(f"Record {key} was deleted")
+        else:
+            return print(f"Record {key} was not found")
 
     def update_record(self, old_value, new_value):
-        # old_value = old_value[0].upper() + old_value[1:].lower()
-        # new_value = new_value[0].upper() + new_value[1:].lower()
+        old_value = str(old_value)
+        new_value = str(new_value)
         record_list = (str(value).split(" ") for value in self.data.values())
         for record in record_list:
             if old_value in record:
                 index = record.index(old_value)
-                record[index] = new_value
-                name = record[0][0].upper() + record[0][1:].lower()
-                self.data[name] = ' '.join(record)
-                self.delete_record(old_value)
+                if index == 0:
+                    record[index] = new_value
+                    name = record[0][0].upper() + record[0][1:].lower()
+                    self.data[name] = ' '.join(record)
+                    self.delete_record(old_value)
+                if index > 0:
+                    record[index] = new_value
+                    name = record[0][0].upper() + record[0][1:].lower()
+                    self.data[name] = ' '.join(record)
 
                 return print(f"{old_value} was replaced with {new_value}")
 
             return print(f"{old_value} was not found")
-
-        # record_list = (str(value).split(" ") for value in self.data.values())
-        # for record in self.data.values():
-        #     list_of_records = str(record).lower().split(" ")
-        #     for word in list_of_records:
-        #         if word == old_value.lower():
-        #             index = list_of_records.index(word)
-        #             list_of_records[index] = new_value
-        #             new_record = " ".join(list_of_records)
-        #             name = list_of_records[0]
-        #             print(new_record)
-        #             print(name)
-                    # for name in self.data.keys():
-                        # self.data[name] = new_record
 
     def iterator(self, n):
         if len(self.data) < n:
@@ -142,7 +136,9 @@ class Field:
             if bool(re.match(PHONE_REGEX, value)):
                 if len(value) == 12:
                     self.__phone = f'+{value}'
-                elif len(value) == 10:
+                if len(value) == 13:
+                    self.__phone = value
+                if len(value) == 10:
                     self.__phone = f'+38{value}'
             else:
                 raise Exception(f"Phone number is not valid")
@@ -215,8 +211,8 @@ def main():
                 sasha_book.delete_record(name)
                 sasha_book.save()
             if command == "edit" or command == "update" or command == "change":
-                old_value = input("Enter name/phone/birthday:")
-                new_value = input("Enter new name/phone/birthday:")
+                old_value = input("Enter name/phone:")
+                new_value = input("Enter new name/phone:")
                 sasha_book.update_record(old_value, new_value)
                 sasha_book.save()
             if command == "find" or command == "search":
