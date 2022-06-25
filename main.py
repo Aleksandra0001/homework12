@@ -1,8 +1,8 @@
-from datetime import datetime
-from helpper import check_age
 from collections import UserDict
-import re
 import pickle
+import re
+from datetime import datetime
+from helpers import check_age
 
 FILE_NAME = "address_book.bin"
 PHONE_REGEX = re.compile(r"^\+?(\d{2})?\(?(0\d{2})\)?(\d{7}$)")
@@ -14,42 +14,39 @@ class AddressBook(UserDict):
         self.data[name] = record
 
     def find_record(self, search_value):
-        for record in self.data.values():
-            list_of_records = str(record).lower().split(" ")
-            for word in list_of_records:
-                if word == search_value.lower():
-                    return print(f"By {search_value} was found: {record} ")
-        else:
-            return print("Not found")
+        search_value = search_value[0].upper() + search_value[1:].lower()
+        list_of_values = (str(value).split(" ") for value in self.data.values())
+
+        for value in list_of_values:
+            if str(search_value) in value:
+                return print(f"{search_value} was found in {value}")
+        return print(f"{search_value} was not found")
 
     def delete_record(self, key):
-        key = key[0].upper() + key[1:].lower()
         if key in self.data.keys():
             self.data.__delitem__(key)
             return print(f"Record {key} was deleted")
-        else:
-            return print(f"Record {key} was not found")
+        return print(f"Record {key} was not found")
 
     def update_record(self, old_value, new_value):
         old_value = str(old_value)
         new_value = str(new_value)
-        record_list = (str(value).split(" ") for value in self.data.values())
-        for record in record_list:
-            if old_value in record:
-                index = record.index(old_value)
-                if index == 0:
-                    record[index] = new_value
-                    name = record[0][0].upper() + record[0][1:].lower()
-                    self.data[name] = ' '.join(record)
-                    self.delete_record(old_value)
-                if index > 0:
-                    record[index] = new_value
-                    name = record[0][0].upper() + record[0][1:].lower()
-                    self.data[name] = ' '.join(record)
 
-                return print(f"{old_value} was replaced with {new_value}")
+        list_of_values_test = (value for value in self.data.values())
+        for el in list_of_values_test:
 
-            return print(f"{old_value} was not found")
+            if old_value in el:
+                new_el = el.replace(old_value, new_value)
+                old_key = el.split(' ')[0]
+                new_key = new_el.split(' ')[0]
+                if old_key != new_key:
+                    self.data.__delitem__(old_key)
+                    self.data[new_key] = new_el
+                else:
+                    self.data[old_key] = new_el
+                return print(f"Record {old_value} was updated to {new_value}")
+
+        return print(f"Record {old_value} was not found")
 
     def iterator(self, n):
         if len(self.data) < n:
@@ -96,6 +93,7 @@ class Record:
                 break
 
     def __repr__(self):
+
         result = f"{self.name} {self.phone_number} {self.birthday}"
         return result
 
@@ -136,10 +134,10 @@ class Field:
             if bool(re.match(PHONE_REGEX, value)):
                 if len(value) == 12:
                     self.__phone = f'+{value}'
-                if len(value) == 13:
-                    self.__phone = value
-                if len(value) == 10:
+                elif len(value) == 10:
                     self.__phone = f'+38{value}'
+                elif len(value) == 13:
+                    self.__phone = value
             else:
                 raise Exception(f"Phone number is not valid")
 
@@ -148,20 +146,22 @@ class Field:
         value = value.strip()
         if value not in [None, ""] and check_age(value):
             self.count_days_to_birthday(value)
-            self.__birthday = f"{value} {self.__days_to_birthday} days to birthday"
+            self.__birthday = f'{value} ({self.__days_to_birthday} days to birthday)'
+        else:
+            self.__birthday = None
 
     def count_days_to_birthday(self, value):
         try:
-            current_day = datetime.now()
+            current_date = datetime.now()
             birthday = datetime.strptime(value, '%d.%m.%Y')
-            current_birthday = birthday.replace(year=current_day.year)
-            next_birthday = birthday.replace(year=current_day.year + 1)
-            current_count = (current_birthday - current_day).days
-            next_count = (next_birthday - current_day).days
-            days_to_birthday = current_count if current_day.date() < current_birthday.date() else next_count
+            current_birthday = birthday.replace(year=current_date.year)
+            next_birthday = birthday.replace(year=current_date.year + 1)
+            current_count = (current_birthday - current_date).days
+            next_count: int = (next_birthday - current_date).days
+            days_to_birthday = current_count if current_date.date() < current_birthday.date() else next_count
             self.__days_to_birthday = days_to_birthday
         except ValueError:
-            raise Exception("Birthday not valid")
+            raise Exception(f"Birthday date is not valid")
 
 
 class Name(Field):
@@ -192,7 +192,7 @@ class Birthday(Field):
 
 
 def main():
-    commands = ["add", "show", "delete", "find", "search", "edit", "update", "change", "exit", "bye", "goodbye"]
+    commands = ["add", "show", "delete", "find", "edit", "update", "change", "exit", "bye", "goodbye"]
     sasha_book = AddressBook()
     sasha_book.load()
     print("Hi!")
@@ -211,12 +211,27 @@ def main():
                 sasha_book.delete_record(name)
                 sasha_book.save()
             if command == "edit" or command == "update" or command == "change":
-                old_value = input("Enter name/phone:")
-                new_value = input("Enter new name/phone:")
-                sasha_book.update_record(old_value, new_value)
-                sasha_book.save()
-            if command == "find" or command == "search":
-                value = input("Enter name/phone/birthday for update:")
+                update_name = int(input('Enter 1 to update name, 2 to update phone number, 3 to update birthday: '))
+                if update_name == 1:
+                    old_value = input("Enter old name:")
+                    new_value = input("Enter new name:")
+                    sasha_book.update_record(Name(old_value), Name(new_value))
+                    sasha_book.save()
+                elif update_name == 2:
+                    old_value = input("Enter old phone-number:")
+                    new_value = input("Enter new phone-number:")
+                    sasha_book.update_record(Phone(old_value), Phone(new_value))
+                    sasha_book.save()
+                elif update_name == 3:
+                    old_value = input("Enter old birthday:")
+                    new_value = input("Enter new birthday:")
+                    sasha_book.update_record(Birthday(old_value), Birthday(new_value))
+                    sasha_book.save()
+                else:
+                    print("Wrong command")
+
+            if command == "find":
+                value = input("Enter name/phone/birthday for find:")
                 sasha_book.find_record(value)
             if command == "show":
                 print(sasha_book)
